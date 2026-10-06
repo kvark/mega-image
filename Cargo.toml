@@ -1,0 +1,14 @@
+[package]
+name = "mega-image"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+license = "MIT"
+
+[dependencies]
+meganeura = { path = "../meganeura", features = ["gguf"] }
+hf-hub = { version = "1", features = ["blocking", "rustls-tls"] }
+tokenizers = { version = "0.22.1", default-features = false, features = ["fancy-regex"] }
+
+[profile.release]
+lto = "thin"
