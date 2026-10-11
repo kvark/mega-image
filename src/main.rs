@@ -107,16 +107,16 @@ fn write_f32(path: &Path, values: &[f32]) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn positions(text: usize, h: usize, w: usize) -> Vec<u32> {
+fn positions(text: usize, h: usize, w: usize) -> Vec<f32> {
     let mut out = Vec::with_capacity((text + h * w) * 3);
     for index in 0..text {
-        out.extend([index as u32; 3]);
+        out.extend([index as f32; 3]);
     }
     for y in 0..h {
         for x in 0..w {
-            out.push(text as u32);
-            out.push((y as i32 - (h as i32 - h as i32 / 2)) as u32);
-            out.push((x as i32 - (w as i32 - w as i32 / 2)) as u32);
+            out.push(text as f32);
+            out.push((y as i32 - (h as i32 - h as i32 / 2)) as f32);
+            out.push((x as i32 - (w as i32 - w as i32 / 2)) as f32);
         }
     }
     out
@@ -254,7 +254,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     println!("loading {} transformer tensors", gguf.tensors.len());
     model::load_weights(&mut session, &gguf)?;
     session.set_input("prompt_embeddings", &prompt);
-    session.set_input_u32(
+    session.set_input(
         "positions",
         &positions(text_tokens, height_tokens, width_tokens),
     );
@@ -306,22 +306,11 @@ mod tests {
     #[test]
     fn axial_positions_match_qwen_centering() {
         let got = positions(2, 2, 2);
-        assert_eq!(&got[..6], &[0, 0, 0, 1, 1, 1]);
+        assert_eq!(&got[..6], &[0.0, 0.0, 0.0, 1.0, 1.0, 1.0]);
         assert_eq!(
             &got[6..],
             &[
-                2,
-                (-1i32) as u32,
-                (-1i32) as u32,
-                2,
-                (-1i32) as u32,
-                0,
-                2,
-                0,
-                (-1i32) as u32,
-                2,
-                0,
-                0,
+                2.0, -1.0, -1.0, 2.0, -1.0, 0.0, 2.0, 0.0, -1.0, 2.0, 0.0, 0.0,
             ]
         );
     }

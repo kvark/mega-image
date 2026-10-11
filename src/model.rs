@@ -132,7 +132,7 @@ pub fn build(
     let image_tokens = height_tokens * width_tokens;
     let text_input = graph.input("prompt_embeddings", &[text_tokens, HIDDEN]);
     let latent_input = graph.input("latents", &[image_tokens, CHANNELS]);
-    let positions = graph.input_u32("positions", &[text_tokens + image_tokens, 3]);
+    let positions = graph.input("positions", &[text_tokens + image_tokens, 3]);
     let time_input = graph.input("time_embedding", &[1, 256]);
 
     let text_norm_source = model
