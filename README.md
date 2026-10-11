@@ -53,7 +53,6 @@ The current output is raw little-endian `f32`, shaped
 `[height / 16 * width / 16, 64]`. The Qwen-Image 2.1 VAE decoder is not yet
 implemented, so the executable does not currently write PNG files.
 
-This crate intentionally uses `meganeura = { path = "../meganeura" }`. The
-sibling library contains Qwen-Image's three-axis RoPE and block-causal
-attention. The Qwen3-VL frontend reuses Meganeura's lossless GGUF Q4_K, Q6_K,
-Q8_0, and dense-weight loaders.
+This crate pins Meganeura's `qwen-image` git revision, which contains
+Qwen-Image's three-axis RoPE and block-causal attention. The Qwen3-VL frontend
+reuses Meganeura's lossless GGUF Q4_K, Q6_K, Q8_0, and dense-weight loaders.
