@@ -43,11 +43,17 @@ limiting peak GPU residency. Only the prompt's token-embedding rows are
 dequantized; the full 622-million-value embedding table is never expanded on
 the GPU.
 
-Model setup is also host-memory intensive. With the currently pinned
-Meganeura loader, allow roughly 20 GiB of available system memory while each
-GGUF is copied into RAM and its GPU parameter buffers are populated. Reducing
-the image dimensions lowers activation and attention memory, but not this
-fixed weight-loading peak.
+Meganeura memory-maps GGUF files, so loading does not first copy each complete
+model into a second heap allocation. File pages are faulted in as weights are
+uploaded and can be reclaimed by the operating system. GPU memory remains the
+main constraint: reducing the image dimensions lowers activation and attention
+memory. The default avoids derived packed SwiGLU weights; `--pack-swiglu`
+trades several gigabytes of additional residency for faster MLP layers.
+
+Each pass is split into 64 GPU submissions by default. This avoids OS GPU
+watchdog resets on long-running graphs, notably with AMD RADV. Use
+`--submission-chunks N` to tune the tradeoff between submission overhead and
+the maximum uninterrupted GPU workload; `1` restores a single submission.
 
 Useful overrides:
 
@@ -57,6 +63,9 @@ cargo run --release -- --model /models/qwen-image.gguf --prompt "..."
 
 # Fail rather than access the network; every required file must be cached.
 cargo run --release -- --offline --prompt "..."
+
+# Use faster packed SwiGLU projections when the GPU has memory to spare.
+cargo run --release -- --pack-swiglu --prompt "..."
 
 # Preserve the old precomputed-embedding path and skip the text encoder.
 cargo run --release -- \

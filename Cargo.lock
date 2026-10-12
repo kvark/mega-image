@@ -2217,7 +2217,7 @@ dependencies = [
 [[package]]
 name = "meganeura"
 version = "0.3.0"
-source = "git+https://github.com/kvark/meganeura?rev=eb8c90fceb2f065bed98c2d1c6cc4e419923e11d#eb8c90fceb2f065bed98c2d1c6cc4e419923e11d"
+source = "git+https://github.com/kvark/meganeura?rev=46e8428f83afce69c299e9f2994d24f9a7b39eab#46e8428f83afce69c299e9f2994d24f9a7b39eab"
 dependencies = [
  "blade-graphics",
  "blade-macros",
@@ -2226,6 +2226,7 @@ dependencies = [
  "flate2",
  "half",
  "log",
+ "memmap2",
  "naga",
  "oxionnx-core",
  "oxionnx-proto",
@@ -2241,6 +2242,15 @@ name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+
+[[package]]
+name = "memmap2"
+version = "0.9.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "mime"

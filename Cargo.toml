@@ -9,7 +9,7 @@ readme = "README.md"
 license = "MIT"
 
 [dependencies]
-meganeura = { git = "https://github.com/kvark/meganeura", rev = "eb8c90fceb2f065bed98c2d1c6cc4e419923e11d", features = ["gguf"] }
+meganeura = { git = "https://github.com/kvark/meganeura", rev = "46e8428f83afce69c299e9f2994d24f9a7b39eab", features = ["gguf"] }
 hf-hub = { version = "1", features = ["blocking", "rustls-tls"] }
 tokenizers = { version = "0.22.1", default-features = false, features = ["fancy-regex"] }
 

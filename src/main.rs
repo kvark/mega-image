@@ -9,6 +9,8 @@ use std::path::{Path, PathBuf};
 use meganeura::Graph;
 use meganeura::load::gguf::load_gguf;
 
+const DEFAULT_SUBMISSION_CHUNKS: usize = 64;
+
 struct Args {
     model: Option<PathBuf>,
     model_repo: String,
@@ -23,6 +25,8 @@ struct Args {
     height: usize,
     steps: usize,
     seed: u64,
+    submission_chunks: usize,
+    pack_swiglu: bool,
     offline: bool,
 }
 
@@ -45,7 +49,11 @@ fn usage() -> &'static str {
        --output FILE                 Default: latents.f32\n\
        --width N --height N          Default: 1024x1024\n\
        --steps N                     Default: 40\n\
-       --seed N                      Default: 42"
+       --seed N                      Default: 42\n\
+\n\
+     Runtime:\n\
+       --submission-chunks N         Max GPU submissions per pass (default: 64)\n\
+       --pack-swiglu                 Trade GPU memory for faster SwiGLU layers"
 }
 
 fn parse_args() -> Result<Args, Box<dyn Error>> {
@@ -83,6 +91,9 @@ fn parse_args() -> Result<Args, Box<dyn Error>> {
         height: optional("--height")?.map_or(Ok(1024), |value| value.parse())?,
         steps: optional("--steps")?.map_or(Ok(40), |value| value.parse())?,
         seed: optional("--seed")?.map_or(Ok(42), |value| value.parse())?,
+        submission_chunks: optional("--submission-chunks")?
+            .map_or(Ok(DEFAULT_SUBMISSION_CHUNKS), |value| value.parse())?,
+        pack_swiglu: values.iter().any(|value| value == "--pack-swiglu"),
         offline: values.iter().any(|value| value == "--offline"),
     })
 }
@@ -183,6 +194,8 @@ fn encode_prompt(
     text_repo: &str,
     text_file: &str,
     offline: bool,
+    pack_swiglu: bool,
+    submission_chunks: usize,
 ) -> Result<Vec<f32>, Box<dyn Error>> {
     let files = hub::resolve_text_files(tokenizer_repo, text_repo, text_file, offline)?;
     let tokens = text_encoder::tokenize(&files.tokenizer, prompt)?;
@@ -198,8 +211,10 @@ fn encode_prompt(
     let mut graph = Graph::new();
     let output = text_encoder::build(&mut graph, &text_model, tokens.ids.len(), tokens.drop)?;
     graph.set_outputs(vec![output]);
-    let mut session = meganeura::build(&graph, meganeura::SessionConfig::inference_from_env()).0;
-    session.set_submission_chunks(1);
+    let mut config = meganeura::SessionConfig::inference_from_env();
+    config.optimize.pack_swiglu = pack_swiglu;
+    let mut session = meganeura::build(&graph, config).0;
+    session.set_submission_chunks(submission_chunks);
     text_encoder::load_weights(&mut session, &text_model)?;
     drop(text_model);
     session.set_input("token_embeddings", &token_embeddings);
@@ -211,8 +226,15 @@ fn encode_prompt(
 
 fn run() -> Result<(), Box<dyn Error>> {
     let args = parse_args().map_err(|e| format!("{e}\n{}", usage()))?;
-    if args.width % 32 != 0 || args.height % 32 != 0 || args.steps == 0 {
-        return Err("width and height must be divisible by 32, and steps must be nonzero".into());
+    if args.width % 32 != 0
+        || args.height % 32 != 0
+        || args.steps == 0
+        || args.submission_chunks == 0
+    {
+        return Err(
+            "width and height must be divisible by 32; steps and submission chunks must be nonzero"
+                .into(),
+        );
     }
     let prompt = match (&args.prompt, &args.prompt_embeddings) {
         (Some(prompt), None) => encode_prompt(
@@ -221,6 +243,8 @@ fn run() -> Result<(), Box<dyn Error>> {
             &args.text_repo,
             &args.text_file,
             args.offline,
+            args.pack_swiglu,
+            args.submission_chunks,
         )?,
         (None, Some(path)) => read_f32(path)?,
         _ => unreachable!("parse_args enforces one prompt input"),
@@ -250,8 +274,18 @@ fn run() -> Result<(), Box<dyn Error>> {
         "compiling transformer for {text_tokens} text + {} image tokens",
         built.image_tokens
     );
-    let mut session = meganeura::build(&graph, meganeura::SessionConfig::inference_from_env()).0;
-    session.set_submission_chunks(1);
+    let mut config = meganeura::SessionConfig::inference_from_env();
+    config.optimize.pack_swiglu = args.pack_swiglu;
+    let mut session = meganeura::build(&graph, config).0;
+    session.set_submission_chunks(args.submission_chunks);
+    println!("transformer {}", session.memory_summary());
+    if let Some(memory) = session.device_memory_stats() {
+        println!(
+            "GPU heap usage {:.1} / {:.1} GB",
+            memory.usage_bytes as f64 / 1e9,
+            memory.budget_bytes as f64 / 1e9
+        );
+    }
     println!("loading {} transformer tensors", gguf.tensors.len());
     model::load_weights(&mut session, &gguf)?;
     drop(gguf);
