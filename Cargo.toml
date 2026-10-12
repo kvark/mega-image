@@ -6,7 +6,7 @@ rust-version = "1.92"
 license = "MIT"
 
 [dependencies]
-meganeura = { git = "https://github.com/kvark/meganeura", rev = "cf85bf44babfc87e249713265f4c0931a605c577", features = ["gguf"] }
+meganeura = { git = "https://github.com/kvark/meganeura", rev = "2bbf1d4c35d63265ed9e8dbdc22a2e1a85feb2e6", features = ["gguf"] }
 hf-hub = { version = "1", features = ["blocking", "rustls-tls"] }
 tokenizers = { version = "0.22.1", default-features = false, features = ["fancy-regex"] }
 
