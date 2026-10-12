@@ -201,6 +201,7 @@ fn encode_prompt(
     let mut session = meganeura::build(&graph, meganeura::SessionConfig::inference_from_env()).0;
     session.set_submission_chunks(1);
     text_encoder::load_weights(&mut session, &text_model)?;
+    drop(text_model);
     session.set_input("token_embeddings", &token_embeddings);
     session.step();
     let mut embeddings = vec![0.0; output_tokens * text_encoder::HIDDEN];
@@ -253,6 +254,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     session.set_submission_chunks(1);
     println!("loading {} transformer tensors", gguf.tensors.len());
     model::load_weights(&mut session, &gguf)?;
+    drop(gguf);
     session.set_input("prompt_embeddings", &prompt);
     session.set_input(
         "positions",

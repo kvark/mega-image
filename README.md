@@ -15,6 +15,19 @@ cargo run --release -- \
   --output latents.f32
 ```
 
+The default 1024x1024 resolution constructs 4096 image tokens and requires a
+substantial amount of GPU memory. For a first end-to-end smoke run, use 512x512
+and one sampling step:
+
+```sh
+cargo run --release -- \
+  --width 512 --height 512 --steps 1 \
+  --prompt "A glass dragon sleeping in an overgrown observatory" \
+  --output smoke.f32
+```
+
+Once the files are cached, add `--offline` to prohibit network access.
+
 By default this resolves:
 
 - `qwen-image-2.1-UC-Q4_K_M.gguf` from
@@ -29,6 +42,12 @@ runs first and is released before the diffusion transformer is constructed,
 limiting peak GPU residency. Only the prompt's token-embedding rows are
 dequantized; the full 622-million-value embedding table is never expanded on
 the GPU.
+
+Model setup is also host-memory intensive. With the currently pinned
+Meganeura loader, allow roughly 20 GiB of available system memory while each
+GGUF is copied into RAM and its GPU parameter buffers are populated. Reducing
+the image dimensions lowers activation and attention memory, but not this
+fixed weight-loading peak.
 
 Useful overrides:
 
@@ -53,6 +72,6 @@ The current output is raw little-endian `f32`, shaped
 `[height / 16 * width / 16, 64]`. The Qwen-Image 2.1 VAE decoder is not yet
 implemented, so the executable does not currently write PNG files.
 
-This crate pins Meganeura's `qwen-image` git revision, which contains
-Qwen-Image's three-axis RoPE and block-causal attention. The Qwen3-VL frontend
-reuses Meganeura's lossless GGUF Q4_K, Q6_K, Q8_0, and dense-weight loaders.
+This crate pins a merged Meganeura `main` revision containing Qwen-Image's
+three-axis RoPE and block-causal attention. The Qwen3-VL frontend reuses
+Meganeura's lossless GGUF Q4_K, Q6_K, Q8_0, and dense-weight loaders.

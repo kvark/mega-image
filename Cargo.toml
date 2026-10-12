@@ -3,10 +3,13 @@ name = "mega-image"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92"
+description = "Qwen-Image 2.1 GGUF inference powered by Meganeura"
+repository = "https://github.com/kvark/mega-image"
+readme = "README.md"
 license = "MIT"
 
 [dependencies]
-meganeura = { git = "https://github.com/kvark/meganeura", rev = "e29e0130f9ae612dc1d4d5e80f5d894a132b782f", features = ["gguf"] }
+meganeura = { git = "https://github.com/kvark/meganeura", rev = "eb8c90fceb2f065bed98c2d1c6cc4e419923e11d", features = ["gguf"] }
 hf-hub = { version = "1", features = ["blocking", "rustls-tls"] }
 tokenizers = { version = "0.22.1", default-features = false, features = ["fancy-regex"] }
 
